@@ -273,6 +273,7 @@ def main_cli() -> None:
             and config.report.prometheus.per_stage
         ):
             config.load.interval = max(config.load.interval, metrics_client.scrape_interval)
+        # TODO: SET LOAD CONFIG NUM_WORKERS AND WORKER_MAX_CONCURRENCY IF CONCURRENT LOAD TYPE
         loadgen = LoadGenerator(datagen, config.load)
     else:
         raise Exception("load config missing")

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from inference_perf.client.metricsclient.base import StageRuntimeInfo, StageStatus
-from .load_timer import LoadTimer, ConstantLoadTimer, PoissonLoadTimer
+from .load_timer import LoadTimer, ConstantLoadTimer, PoissonLoadTimer, ConcurrentLoadTimer
 from inference_perf.datagen import DataGenerator
 from inference_perf.apis import InferenceAPIData
 from inference_perf.client.modelserver import ModelServerClient
@@ -168,6 +168,7 @@ class LoadGenerator:
         self.num_workers = load_config.num_workers
         self.workers: List[Worker] = []
         self.worker_max_concurrency = load_config.worker_max_concurrency
+        # TODO: ADD CONCURRENCY LEVEL FIELD THAT WE PASS TO LOADTIMER?
         self.circuit_breakers = [get_circuit_breaker(breaker_name) for breaker_name in load_config.circuit_breakers]
         self.sweep_config = load_config.sweep
         self.interrupt_sig = False
@@ -180,7 +181,12 @@ class LoadGenerator:
     def get_timer(self, rate: float, duration: float) -> LoadTimer:
         if self.load_type == LoadType.POISSON:
             return PoissonLoadTimer(rate=rate, duration=duration)
+        elif self.load_type == LoadType.CONCURRENT:
+            # TODO: CHANGE TO CONCURRENCY LEVEL FIELD?
+            return ConcurrentLoadTimer(num_workers=self.num_workers, worker_max_concurrency=self.worker_max_concurrency)
+        # Default load type is constant
         return ConstantLoadTimer(rate=rate, duration=duration)
+        
 
     async def drain(self, queue: mp.Queue) -> None:  # type: ignore[type-arg]
         while True:

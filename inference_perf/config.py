@@ -82,6 +82,7 @@ class ModelServerType(Enum):
 class LoadType(Enum):
     CONSTANT = "constant"
     POISSON = "poisson"
+    CONCURRENT = "concurrent"
 
 
 class MetricsClientType(Enum):
@@ -113,6 +114,7 @@ class LoadConfig(BaseModel):
     interval: float = 1.0
     stages: List[LoadStage] = []
     sweep: Optional[SweepConfig] = None
+    # TODO: ADD CONCURRENCY LEVEL FIELD THAT WE PASS TO LOADTIMER WITH DEFAULT VALUE?
     num_workers: int = max(1, cpu_count())  # type: ignore
     worker_max_concurrency: int = 100
     worker_max_tcp_connections: int = 2500

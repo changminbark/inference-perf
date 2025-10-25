@@ -64,6 +64,10 @@ class ConstantLoadTimer(LoadTimer):
 
 
 class PoissonLoadTimer(LoadTimer):
+    """
+    A load generator that generates requests based on a Poisson distribution.
+    """
+
     def __init__(self, rate: float, duration: float) -> None:
         self._rate = rate
         self._duration = duration
@@ -82,6 +86,37 @@ class PoissonLoadTimer(LoadTimer):
             if req_count < 1:
                 next_time += 1.0
                 continue
+
+            # Schedule the requests over the next second
+            timer = ConstantLoadTimer(req_count, 1.0)
+            time_generator = timer.start_timer(next_time)
+            for _ in range(req_count):
+                next_time = next(time_generator)
+                yield next_time
+
+
+class ConcurrentLoadTimer(LoadTimer):
+    """
+    A load generator that generates requests based on concurrency level.
+    Enough load is generated to saturate the workers.
+    This is to achieve constant load.
+    """
+
+
+    def __init__(self, num_workers: int, worker_max_concurrency: int) -> None:
+        # This is the number of requests per worker thread that will be generated
+        # based on the loadgen concurrency workaround
+        self._CONCURRENT_LOAD_FACTOR = 18750
+        self._concurrency_level = num_workers * worker_max_concurrency
+
+    def start_timer(self, initial: Optional[float] = None) -> Generator[float, None, None]:
+        # Set start time
+        next_time = time.perf_counter() if initial is None else initial
+
+        # Given a rate, yield a time to wait before the next request
+        while True:
+            # How many requests in the next second
+            req_count = self._concurrency_level * self._CONCURRENT_LOAD_FACTOR
 
             # Schedule the requests over the next second
             timer = ConstantLoadTimer(req_count, 1.0)
